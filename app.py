@@ -1,3 +1,4 @@
+# Dependancies
 import numpy as np
 import datetime as dt
 import sqlalchemy
@@ -33,50 +34,60 @@ app = Flask(__name__)
 #################################################
 
 @app.route("/")
+# Base route welcome and list available routes
+
 def welcome():
     """List all available api routes."""
     return (
-        f"Available Routes:<br/>"
-        f"/api/v1.0/precipitation<br/>"
-        f"/api/v1.0/stations</br>"
-        f"/api/v1.0/tobs</br>"
-        f"/api/v1.0/<start></br>"
-        f"/api/v1.0/<start><end>"
+        "<h1>Welcome to the Hawaii Weather Sation API</h1><br><br>"
+        "Available Routes:<br/>"
+        "<ul>"
+        "<li>/api/v1.0/precipitation</li>"
+        "- for the last 12 months of precipitation data in all stations"
+        "<li>/api/v1.0/stations</li>"
+        " - for a list of active stations"
+        "<li>/api/v1.0/tobs</li>"
+        "- for a list of temperature observations from the most active station"
+        "<li>/api/v1.0/< start ></li>"
+        "- for the minimum, maxmimum and average temperature observations prior to the start date as yyyymmdd"
+        "<li>/api/v1.0/< start >/< end ></li>"
+        "- for the minimum, maxmimum and average temperature observations betwen the start and end dates as yyyymmdd"
+        "</ul>"
     )
 
 
 @app.route("/api/v1.0/precipitation")
 def precipitation():
-    # Create our session (link) from Python to the DB
+    # Create session from Python to hawaii db
     session = Session(engine)
 
-    """Return a list of all passenger names"""
-    # Query all passengers
+    # Query to find last date of data set
     lastdate = session.query(func.max(Measurement.date))
     enddate = dt.datetime.strptime(lastdate[0][0], '%Y-%m-%d').date()
+    # Get start date as 1 year prior to end date
     startdate = enddate.replace(enddate.year - 1)
+    #Query to get precipiation observations between start and end dates
     results = session.query(Measurement.date, Measurement.prcp).filter(Measurement.date >= startdate).filter(Measurement.prcp.isnot(None)).all()
     
     session.close()
 
-    # Convert list of tuples into normal list
+    # Convert list of tuples into dictionary
     precip = dict(results)
-
+    # return as json
     return jsonify(precip)
 
 
 @app.route("/api/v1.0/stations")
 def stations():
-    # Create our session (link) from Python to the DB
+    # Create session from Python to hawaii db
     session = Session(engine)
 
-    """Return a list of passenger data including the name, age, and sex of each passenger"""
-    # Query all passengers
+    # Query all stations
     results = session.query(Measurement.station.label('station'),Station.name, func.count(Measurement.station).label('count')).group_by(Measurement.station).order_by(desc('count')).join(Station, Station.station==Measurement.station).all()
 
     session.close()
 
-    # Create a dictionary from the row data and append to a list of all_passengers
+    # Create a dictionary from the row data and append to a list of stations
     stationslist = []
     for sid, name, obs in results:
         station_dict = {}
@@ -91,16 +102,17 @@ def stations():
 
 @app.route("/api/v1.0/tobs")
 def stationtobs():
-    # Create our session (link) from Python to the DB
+    # Create session from Python to hawaii db
     session = Session(engine)
 
-    """Return a list of passenger data including the name, age, and sex of each passenger"""
-    # Query all passengers
+    # Query to find last date of data set
     lastdate = session.query(func.max(Measurement.date))
     enddate = dt.datetime.strptime(lastdate[0][0], '%Y-%m-%d').date()
+    # Calculate 1 year from last date
     startdate = enddate.replace(enddate.year - 1)
+    # Sub query to get count of temperature observations per station
     tobs_counts = session.query(Measurement.station.label('station'), func.count(Measurement.tobs).label('count')).group_by(Measurement.station).filter(Measurement.tobs.isnot(None)).order_by(desc('count')).subquery()
-
+    # Query to get station with most number of observations
     maxtobs = session.query(func.max(tobs_counts.c.count)).scalar()
 
     maxtobstation = session.query(tobs_counts.c.station).filter(tobs_counts.c.count == maxtobs).scalar()
@@ -118,11 +130,11 @@ def stationtobs():
     return jsonify(tobs)
 
 
-@app.route("/api/v1.0/<start>/<end>")
-def tobsdate(start,end=dt.date.today()):
+
+@app.route("/api/v1.0/<start>")
+def tobsdate(start):
     
-    
-    # Create our session (link) from Python to the DB
+    # Create session from Python to hawaii db
     
     session = Session(engine)
 
@@ -132,14 +144,9 @@ def tobsdate(start,end=dt.date.today()):
 
 
         
-    results = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).filter(Measurement.date >= start).filter(Measurement.date <= end).all()
+    results = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).filter(Measurement.date >= start).all()
 
-    # maxtobs = session.query(func.max(tobs_counts.c.count)).scalar()
-
-    # maxtobstation = session.query(tobs_counts.c.station).filter(tobs_counts.c.count == maxtobs).scalar()
-    # maxtobstation
-
-    # results = session.query(Measurement.date, Measurement.tobs).filter(Measurement.date >= startdate).filter(Measurement.tobs.isnot(None)).filter(Measurement.station == maxtobstation ).all()
+    # 
     session.close()
     obslist = []
     for tmin, tavg, tmax in results:
@@ -153,18 +160,33 @@ def tobsdate(start,end=dt.date.today()):
     return jsonify(obslist)
 
 
-      
-
-    # # Create a dictionary from the row data and append to a list of all_passengers
-    # tobs = dict(results)
 
 
+@app.route("/api/v1.0/<start>/<end>")
+def tobsdates(start,end):
+    
+    
+    # Create session from Python to hawaii db
+    
+    session = Session(engine)
 
-    # return jsonify(tobs)
+    """Return a list of passenger data including the name, age, and sex of each passenger"""
+    # Query all passengers
 
+        
+    results = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).filter(Measurement.date >= start).filter(Measurement.date <= end).all()
 
+ 
+    session.close()
+    obslist = []
+    for tmin, tavg, tmax in results:
+        obs_dict = {}
+        obs_dict["TMIN"] = tmin
+        obs_dict["TAVG"] = tavg
+        obs_dict["TMAX"] = tmax
+        obslist.append(obs_dict)
 
-
+    return jsonify(obslist)
 
 
 
