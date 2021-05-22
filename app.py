@@ -123,7 +123,7 @@ def stationtobs():
 
     session.close()
 
-    # Create a dictionary from the row data and append to a list of all_passengers
+    #turns list to dictionary
     tobs = dict(results)
 
 
@@ -138,8 +138,8 @@ def tobsdate(start):
     
     session = Session(engine)
 
-    """Return a list of passenger data including the name, age, and sex of each passenger"""
-    # Query all passengers
+ 
+    # Query min, max and average temperature observations from start date onwards
 
 
 
@@ -148,6 +148,8 @@ def tobsdate(start):
 
     # 
     session.close()
+
+    #list of observations
     obslist = []
     for tmin, tavg, tmax in results:
         obs_dict = {}
@@ -156,7 +158,7 @@ def tobsdate(start):
         obs_dict["TMAX"] = tmax
         obslist.append(obs_dict)
 
-
+    #returns list as json
     return jsonify(obslist)
 
 
@@ -170,8 +172,7 @@ def tobsdates(start,end):
     
     session = Session(engine)
 
-    """Return a list of passenger data including the name, age, and sex of each passenger"""
-    # Query all passengers
+    # Query max, min, average temeperature observations between start and end date
 
         
     results = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).filter(Measurement.date >= start).filter(Measurement.date <= end).all()
