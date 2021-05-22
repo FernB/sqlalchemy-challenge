@@ -1,7 +1,6 @@
 # Dependancies
 import numpy as np
 import datetime as dt
-import sqlalchemy
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, func, desc
@@ -39,7 +38,7 @@ app = Flask(__name__)
 def welcome():
     """List all available api routes."""
     return (
-        "<h1>Welcome to the Hawaii Weather Sation API</h1><br><br>"
+        "<h1>Welcome to the Hawaii Weather Station API</h1><br><br>"
         "Available Routes:<br/>"
         "<ul>"
         "<li>/api/v1.0/precipitation</li>"
@@ -83,20 +82,16 @@ def stations():
     session = Session(engine)
 
     # Query all stations
-    results = session.query(Measurement.station.label('station'),Station.name, func.count(Measurement.station).label('count')).group_by(Measurement.station).order_by(desc('count')).join(Station, Station.station==Measurement.station).all()
+    results = session.query(Measurement.station).group_by(Measurement.station)
 
     session.close()
 
-    # Create a dictionary from the row data and append to a list of stations
+    # Create list of stations
     stationslist = []
-    for sid, name, obs in results:
-        station_dict = {}
-        station_dict["Station ID"] = sid
-        station_dict["Station Name"] = name
-        station_dict["Number of Observations"] = obs
-        stationslist.append(station_dict)
+    for i in results:
+        stationslist.append(i.station)
 
-
+    #json stations
     return jsonify(stationslist)
 
 
@@ -114,10 +109,10 @@ def stationtobs():
     tobs_counts = session.query(Measurement.station.label('station'), func.count(Measurement.tobs).label('count')).group_by(Measurement.station).filter(Measurement.tobs.isnot(None)).order_by(desc('count')).subquery()
     # Query to get station with most number of observations
     maxtobs = session.query(func.max(tobs_counts.c.count)).scalar()
-
+    # query to get most active station id
     maxtobstation = session.query(tobs_counts.c.station).filter(tobs_counts.c.count == maxtobs).scalar()
     maxtobstation
-
+    # query to get tobs from most active station
     results = session.query(Measurement.date, Measurement.tobs).filter(Measurement.date >= startdate).filter(Measurement.tobs.isnot(None)).filter(Measurement.station == maxtobstation ).all()
 
 
@@ -126,7 +121,7 @@ def stationtobs():
     #turns list to dictionary
     tobs = dict(results)
 
-
+    #json tobs
     return jsonify(tobs)
 
 
@@ -137,16 +132,11 @@ def tobsdate(start):
     # Create session from Python to hawaii db
     
     session = Session(engine)
-
  
     # Query min, max and average temperature observations from start date onwards
 
-
-
-        
     results = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).filter(Measurement.date >= start).all()
 
-    # 
     session.close()
 
     #list of observations
@@ -154,7 +144,7 @@ def tobsdate(start):
     for tmin, tavg, tmax in results:
         obs_dict = {}
         obs_dict["TMIN"] = tmin
-        obs_dict["TAVG"] = tavg
+        obs_dict["TAVG"] = round(tavg,2)
         obs_dict["TMAX"] = tmax
         obslist.append(obs_dict)
 
@@ -162,33 +152,30 @@ def tobsdate(start):
     return jsonify(obslist)
 
 
-
-
 @app.route("/api/v1.0/<start>/<end>")
 def tobsdates(start,end):
-    
     
     # Create session from Python to hawaii db
     
     session = Session(engine)
 
     # Query max, min, average temeperature observations between start and end date
-
         
     results = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).filter(Measurement.date >= start).filter(Measurement.date <= end).all()
 
- 
     session.close()
+
+    # list of temp obs
     obslist = []
     for tmin, tavg, tmax in results:
         obs_dict = {}
         obs_dict["TMIN"] = tmin
-        obs_dict["TAVG"] = tavg
+        obs_dict["TAVG"] = round(tavg,2)
         obs_dict["TMAX"] = tmax
         obslist.append(obs_dict)
 
+    #json list of obs
     return jsonify(obslist)
-
 
 
 if __name__ == '__main__':
