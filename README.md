@@ -38,6 +38,7 @@ The Hawaii weather database contained weather observations from 9 stations betwe
 The final 12 months of percipition data is shown below and indicates peak rainfall events in September, January and May:
 
 <br>
+
 ![Precipitation](pcp.png)
 
 <br>
@@ -52,6 +53,7 @@ The most active station was USC00519281 (WAIHEE), which also had the greatest nu
 The trip period chosen for analysis was between 2012-02-28 and 2012-03-05. There does not appear to be much variation in temperature average, maximum and minimums for that period plus the date month and day for the previous year as shown below:
 
 <br>
+
 ![Temperature Averages](averages.png)
 
 <br>
@@ -72,6 +74,7 @@ The trip should plan to centre around these areas for the best weather.
 The temperature daily normals for that time period indicate consistant temperature across the time period, showing that there is unlikely to be a significant change in weather to ruin the trip:
 
 <br>
+
 ![Temperature Normals](normals.png)
 
 
@@ -81,6 +84,7 @@ Comparision of temperatures in December compared to June show that there is a st
 
 
 <br>
+
 ![Temperature Histograms](jundec.png)
 
 
